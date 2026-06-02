@@ -1,0 +1,207 @@
+﻿import streamlit as st
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.linear_model import LinearRegression
+from sklearn.cluster import KMeans
+import arabic_reshaper
+from bidi.algorithm import get_display
+
+# دالة إصلاح النصوص العربية في الرسوم البيانية
+def fix_arabic(text_to_fix):
+    reshaped_text = arabic_reshaper.reshape(text_to_fix)
+    return get_display(reshaped_text)
+
+# 1. إعدادات الصفحة الرئيسية
+st.set_page_config(page_title="منصة الخير الذكية والتعليمية", layout="wide", page_icon="📊")
+
+# 2. توليد وتثبيت البيانات الضخمة تلقائياً في الذاكرة لضمان الاستقرار القاطع لجميع الأقسام
+if 'data_loaded' not in st.session_state:
+    np.random.seed(42)
+    n_records = 1000
+    
+    st.session_state.df_donors = pd.DataFrame({
+        'المعرف': [f'D-{i}' for i in range(1, n_records + 1)],
+        'الاسم': [f'متبرع {i}' for i in range(1, n_records + 1)],
+        'العمر': np.random.randint(22, 70, size=n_records),
+        'المدينة': np.random.choice(['الرياض', 'جدة', 'الدمام', 'مكة', 'المدينة'], size=n_records),
+        'مجموع_التبرعات_السنوية_SAR': np.random.randint(1000, 15000, size=n_records),
+        'عدد_مرات_التبرع': np.random.randint(1, 12, size=n_records),
+        'احتمالية_التبرع_المستقبلي_%': np.random.randint(40, 99, size=n_records)
+    })
+    
+    st.session_state.df_beneficiaries = pd.DataFrame({
+        'المعرف': [f'B-{i}' for i in range(1, n_records + 1)],
+        'العائلة': [f'عائلة {i}' for i in range(1, n_records + 1)],
+        'عدد_أفراد_الأسرة': np.random.randint(2, 9, size=n_records),
+        'الدخل_الشهري_SAR': np.random.randint(1500, 6500, size=n_records),
+        'نوع_الدعم_المطلوب': np.random.choice(['سكني', 'غذائي', 'صحي', 'تعليمي'], size=n_records),
+        'حالة_الطلب': np.random.choice(['مقبول', 'قيد الدراسة', 'مكتمل'], size=n_records),
+        'مستوى_الاحتياج_المتوقع_مستقبلا': np.random.choice(['مرتفع جداً', 'متوسط', 'مستقر'], size=n_records)
+    })
+    st.session_state.data_loaded = True
+
+df_donors = st.session_state.df_donors
+df_beneficiaries = st.session_state.df_beneficiaries
+
+# دالة تحويل البيانات للتصدير
+def convert_df_to_csv(df):
+    return df.to_csv(index=False).encode('utf-8-sig')
+
+# 3. واجهة التطبيق الرئيسية
+st.title("📊 منصة الخير الذكية والتعليمية لعلم الإحصاء")
+st.markdown("لوحة تحكم ذكية تعمل بكفاءة مطلقة ومحملة بالبيانات التنبؤية بالكامل.")
+st.divider()
+
+# 4. القائمة الجانبية للتنقل
+with st.sidebar:
+    st.title("⚙️ خيارات النظام")
+    sidebar_choice = st.radio(
+        "📍 انتقل إلى:", 
+        [
+            "لوحة تحكم المتبرعين", 
+            "إدخال متبرع جديد ➕",
+            "لوحة تحكم المستفيدين", 
+            "إدخال مستفيد جديد ➕",
+            "التحليلات التنبؤية (AI)", 
+            "🧠 تعلم مفاهيم الإحصاء في هذا التطبيق",
+            "البوت المساعد الذكي"
+        ]
+    )
+
+# --- لوحة تحكم المتبرعين ---
+if sidebar_choice == "لوحة تحكم المتبرعين":
+    st.header("👥 قاعدة بيانات وإحصاءات المتبرعين")
+    col1, col2, col3 = st.columns(3)
+    col1.metric("إجمالي المتبرعين", f"{len(df_donors)} متبرع")
+    col2.metric("إجمالي التبرعات (SAR)", f"{df_donors['مجموع_التبرعات_السنوية_SAR'].sum():,}")
+    col3.metric("متوسط التبرع", f"{int(df_donors['مجموع_التبرعات_السنوية_SAR'].mean()):,} SAR")
+    
+    fig, ax = plt.subplots(figsize=(6, 4))
+    city_counts = df_donors['المدينة'].value_counts()
+    fixed_labels = [fix_arabic(label) for label in city_counts.index]
+    ax.pie(city_counts, labels=fixed_labels, autopct='%1.1f%%', startangle=90)
+    ax.set_title(fix_arabic('توزيع المتبرعين حسب المدن'))
+    st.pyplot(fig)
+    st.dataframe(df_donors, use_container_width=True)
+
+# --- إدخال متبرع جديد ---
+elif sidebar_choice == "إدخال متبرع جديد ➕":
+    st.header("📝 تسجيل متبرع جديد")
+    with st.form("donor_form", clear_on_submit=True):
+        d_name = st.text_input("اسم المتبرع الكامل:")
+        d_age = st.number_input("العمر:", min_value=18, max_value=100, value=35)
+        d_city = st.selectbox("المدينة:", ['الرياض', 'جدة', 'الدمام', 'مكة', 'المدينة'])
+        d_amount = st.number_input("مجموع التبرعات السنوية (SAR):", min_value=0, value=1000)
+        d_freq = st.number_input("عدد مرات التبرع في السنة:", min_value=1, value=2)
+        submit_donor = st.form_submit_button("حفظ في قاعدة البيانات 💾")
+        
+        if submit_donor and d_name:
+            new_row = {
+                'المعرف': f'D-{len(df_donors)+1}', 'الاسم': d_name, 'العمر': d_age, 
+                'المدينة': d_city, 'مجموع_التبرعات_السنوية_SAR': d_amount, 
+                'عدد_مرات_التبرع': d_freq, 'احتمالية_التبرع_المستقبلي_%': 85
+            }
+            st.session_state.df_donors = pd.concat([df_donors, pd.DataFrame([new_row])], ignore_index=True)
+            st.success(f"✅ تم حفظ المتبرع {d_name} بنجاح!")
+            st.rerun()
+
+# --- لوحة تحكم المستفيدين ---
+elif sidebar_choice == "لوحة تحكم المستفيدين":
+    st.header("🏡 قاعدة بيانات وإحصاءات المستفيدين")
+    col1, col2, col3 = st.columns(3)
+    col1.metric("عدد الأسر المستفيدة", f"{len(df_beneficiaries)} أسرة")
+    col2.metric("متوسط دخل الأسرة", f"{int(df_beneficiaries['الدخل_الشهري_SAR'].mean()):,} SAR")
+    col3.metric("متوسط عدد الأفراد", f"{int(df_beneficiaries['عدد_أفراد_الأسرة'].mean())} أفراد")
+    
+    fig, ax = plt.subplots(figsize=(8, 4))
+    df_fixed_b = df_beneficiaries.copy()
+    df_fixed_b['نوع_الدعم_المطلوب'] = df_fixed_b['نوع_الدعم_المطلوب'].apply(fix_arabic)
+    df_fixed_b['حالة_الطلب'] = df_fixed_b['حالة_الطلب'].apply(fix_arabic)
+    sns.countplot(data=df_fixed_b, x='نوع_الدعم_المطلوب', hue='حالة_الطلب', ax=ax)
+    ax.set_title(fix_arabic('توزيع نوع الدعم المطلوب'))
+    st.pyplot(fig)
+    st.dataframe(df_beneficiaries, use_container_width=True)
+
+# --- إدخال مستفيد جديد ---
+elif sidebar_choice == "إدخال مستفيد جديد ➕":
+    st.header("📝 تسجيل حالة مستفيد جديد")
+    with st.form("beneficiary_form", clear_on_submit=True):
+        b_family = st.text_input("اسم العائلة / المستفيد الرئيسي:")
+        b_members = st.slider("عدد أفراد الأسرة:", 1, 15, 5)
+        b_income = st.number_input("الدخل الشهري الحالي (SAR):", min_value=0, value=2000)
+        b_type = st.selectbox("نوع الدعم المطلوب:", ['سكني', 'غذائي', 'صحي', 'تعليمي'])
+        b_status = st.selectbox("حالة الطلب الحالية:", ['قيد الدراسة', 'مقبول'])
+        submit_beneficiary = st.form_submit_button("حفظ وبدء الدراسة التحليلية 💾")
+        
+        if submit_beneficiary and b_family:
+            new_row = {
+                'المعرف': f'B-{len(df_beneficiaries)+1}', 'العائلة': b_family, 'عدد_أفراد_الأسرة': b_members,
+                'الدخل_الشهري_SAR': b_income, 'نوع_الدعم_المطلوب': b_type, 'حالة_الطلب': b_status, 'مستوى_الاحتياج_المتوقع_مستقبلا': 'متوسط'
+            }
+            st.session_state.df_beneficiaries = pd.concat([df_beneficiaries, pd.DataFrame([new_row])], ignore_index=True)
+            st.success(f"✅ تم تسجيل العائلة {b_family} بنجاح!")
+            st.rerun()
+
+# --- التحليلات التنبؤية بالذكاء الاصطناعي ---
+elif sidebar_choice == "التحليلات التنبؤية (AI)":
+    st.header("🔮 قسم التحليلات التنبؤية الذكي (نماذج تعلم الآلة)")
+    tab1, tab2 = st.tabs(["📉 التنبؤ بحجم التبرعات (Linear Regression)", "🎯 تقسيم المتبرعين الذكي (K-Means)"])
+    
+    with tab1:
+        st.subheader("🤖 نموذج الانحدار الخطي للتنبؤ")
+        X = df_donors[['العمر', 'عدد_مرات_التبرع']].values
+        y = df_donors['مجموع_التبرعات_السنوية_SAR'].values
+        model = LinearRegression().fit(X, y)
+        
+        user_age = st.slider("اختر عمر المتبرع المستهدف:", 18, 80, 35)
+        user_freq = st.slider("اختر عدد مرات التبرع سنوياً:", 1, 24, 5)
+        
+        input_data = np.array([[user_age, user_freq]], dtype=np.float64)
+        prediction = model.predict(input_data)
+        st.success(f"💰 التبرع السنوي المتوقع من هذا المتبرع هو: **{int(max(0, prediction)):,} SAR**")
+        
+    with tab2:
+        st.subheader("🎯 تصنيف مجموعات المتبرعين المضمون")
+        df_cluster = df_donors[['عدد_مرات_التبرع', 'مجموع_التبرعات_السنوية_SAR']].copy()
+        
+        kmeans = KMeans(n_clusters=3, random_state=42, n_init=10)
+        df_cluster['الفئة'] = kmeans.fit_predict(df_cluster.values)
+        
+        fig, ax = plt.subplots(figsize=(8, 5))
+        colors = {0: '#1f77b4', 1: '#ff7f0e', 2: '#2ca02c'}
+        for cluster_id, col in colors.items():
+            sub_set = df_cluster[df_cluster['الفئة'] == cluster_id]
+            ax.scatter(sub_set['عدد_مرات_التبرع'], sub_set['مجموع_التبرعات_السنوية_SAR'], c=col, label=fix_arabic(f'المجموعة {cluster_id + 1}'), alpha=0.7)
+            
+        ax.set_xlabel(fix_arabic('عدد مرات التبرع سنويًا'))
+        ax.set_ylabel(fix_arabic('مجموع التبرعات السنوية (SAR)'))
+        ax.set_title(fix_arabic('توزيع وتصنيف المتبرعين تلقائيًا بواسطة الذكاء الاصطناعي'))
+        ax.legend()
+        ax.grid(True, linestyle='--', alpha=0.3)
+        st.pyplot(fig)
+
+# --- معمل الإحصاء التعليمي المحترف ---
+elif sidebar_choice == "🧠 تعلم مفاهيم الإحصاء في هذا التطبيق":
+    st.header("🧠 معمل الإحصاء التعليمي")
+    col_a, col_b = st.columns(2)
+    with col_a:
+        std_donations = df_donors['مجموع_التبرعات_السنوية_SAR'].std()
+        st.metric(fix_arabic("Annihilator Standard Deviation"), f"{int(std_donations):,} SAR")
+    with col_b:
+        mean_inc = df_beneficiaries['الدخل_الشهري_SAR'].mean()
+        median_inc = df_beneficiaries['الدخل_الشهري_SAR'].median()
+        st.write(f"📊 {fix_arabic('المتوسط الحسابي')}: {int(mean_inc):,} SAR")
+        st.write(f"📊 {fix_arabic('الوسيط الإحصائي')}: {int(median_inc):,} SAR")
+
+# --- البوت المساعد الذكي ---
+elif sidebar_choice == "البوت المساعد الذكي":
+    st.header("🤖 مساعد الخير الذكي")
+    search_query = st.text_input("🔍 ابحث عن اسم متبرع أو عائلة مستفيدة:")
+    if search_query:
+        donor_results = df_donors[df_donors['الاسم'].str.contains(search_query, na=False)]
+        if not donor_results.empty:
+            st.dataframe(donor_results, use_container_width=True)
+        else:
+            st.warning("⚠️ لا توجد نتائج مطابقة.")
