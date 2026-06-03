@@ -129,18 +129,16 @@ elif sidebar_choice == "إدخل بيانات متبرعين ➕":
                 st.dataframe(uploaded_df.head(5))
                 
                 if st.button("🚀 دمج وتحديث قاعدة البيانات السحابية فوراً"):
-                    # إنشاء معرفات جديدة للملف المرفوع تلقائياً
                     start_id = len(df_donors) + 1
                     uploaded_df['المعرف'] = [f'D-{i}' for i in range(start_id, start_id + len(uploaded_df))]
                     if 'احتمالية_التبرع_المستقبلي_%' not in uploaded_df.columns:
                         uploaded_df['احتمالية_التبرع_المستقبلي_%'] = np.random.randint(50, 95, size=len(uploaded_df))
                     
-                    # دمج الملف المرفوع مع قاعدة البيانات الحالية
                     st.session_state.df_donors = pd.concat([df_donors, uploaded_df], ignore_index=True)
                     st.success(f"🎉 نجاح! تم رفع ودمج {len(uploaded_df)} سجل متبرع جديد بنجاح وتحديث النظام التنبئي!")
                     st.rerun()
             except Exception as e:
-                st.error(f"❌ حدث خطأ أثناء قراءة الملف، تأكد من صياغة الأعمدة. التفاصيل: {e}")
+                st.error(f"❌ حدث خطأ أثناء قراءة الملف. التفاصيل: {e}")
 
 # --- لوحة تحكم المستفيدين ---
 elif sidebar_choice == "لوحة تحكم المستفيدين":
@@ -194,3 +192,6 @@ elif sidebar_choice == "إدخل بيانات مستفيدين ➕":
             try:
                 if uploaded_file_b.name.endswith('.csv'):
                     uploaded_df_b = pd.read_csv(uploaded_file_b)
+                else:
+                    uploaded_df_b = pd.read_excel(uploaded_file_b)
+                
