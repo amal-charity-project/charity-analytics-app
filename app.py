@@ -43,11 +43,24 @@ if 'df_beneficiaries' not in st.session_state:
         'مستوى_الاحتياج_المتوقع_مستقبلا': np.random.choice(['مرتفع جداً', 'متوسط', 'مستقر'], size=n_records)
     })
 
-# استدعاء الجداول من الذاكرة المستقرة
 df_donors = st.session_state.df_donors
 df_beneficiaries = st.session_state.df_beneficiaries
 
-# دالة تحويل البيانات للتصدير
+# دالات الذكاء الاصطناعي المعزولة والمحمية بالتخزين المؤقت لتجنب تجميد الواجهة والوقوف
+@st.cache_resource
+def train_prediction_model(donors_data):
+    X = donors_data[['العمر', 'عدد_مرات_التبرع']].values
+    y = donors_data['مجموع_التبرعات_السنوية_SAR'].values
+    model = LinearRegression().fit(X, y)
+    return model
+
+@st.cache_resource
+def run_kmeans_clustering(donors_data):
+    df_cluster = donors_data[['عدد_مرات_التبرع', 'مجموع_التبرعات_السنوية_SAR']].dropna().copy()
+    kmeans = KMeans(n_clusters=3, random_state=42, n_init=10, max_iter=300)
+    df_cluster['الفئة'] = kmeans.fit_predict(df_cluster.values)
+    return df_cluster
+
 def convert_df_to_csv(df):
     return df.to_csv(index=False).encode('utf-8-sig')
 
@@ -90,7 +103,7 @@ if sidebar_choice == "لوحة تحكم المتبرعين":
     st.pyplot(fig)
     st.dataframe(df_donors, use_container_width=True)
 
-# --- إدخال متبرع جديد (يدوي أو عبر إكسيل) ---
+# --- إدخال متبرع جديد ---
 elif sidebar_choice == "إدخل بيانات متبرعين ➕":
     st.header("📝 إضافة بيانات المتبرعين")
     tab_manual, tab_excel = st.tabs(["✍️ إدخال يدوي لمتبرع واحد", "📁 رفع جماعي عبر ملف Excel / CSV"])
@@ -112,6 +125,7 @@ elif sidebar_choice == "إدخل بيانات متبرعين ➕":
                 }
                 st.session_state.df_donors = pd.concat([df_donors, pd.DataFrame([new_row])], ignore_index=True)
                 st.success(f"✅ تم حفظ المتبرع {d_name} بنجاح!")
+                st.cache_resource.clear() # مسح كاش الذكاء الاصطناعي ليدرس المتبرع الجديد فوراً
                 st.rerun()
                 
     with tab_excel:
@@ -136,6 +150,7 @@ elif sidebar_choice == "إدخل بيانات متبرعين ➕":
                 
                 st.session_state.df_donors = pd.concat([df_donors, uploaded_df], ignore_index=True)
                 st.success(f"🎉 نجاح! تم رفع ودمج {len(uploaded_df)} سجل متبرع جديد بنجاح وتحديث النظام التنبئي!")
+                st.cache_resource.clear()
                 st.rerun()
 
 # --- لوحة تحكم المستفيدين ---
@@ -157,7 +172,7 @@ elif sidebar_choice == "لوحة تحكم المستفيدين":
     st.pyplot(fig)
     st.dataframe(df_beneficiaries, use_container_width=True)
 
-# --- إدخال مستفيد جديد (يدوي أو عبر إكسيل) ---
+# --- إدخال مستفيد جديد ---
 elif sidebar_choice == "إدخل بيانات مستفيدين ➕":
     st.header("📝 تسجيل حالات المستفيدين")
     tab_manual, tab_excel = st.tabs(["✍️ إدخال يدوي لحالة واحدة", "📁 رفع جماعي عبر ملف Excel / CSV"])
@@ -182,15 +197,3 @@ elif sidebar_choice == "إدخل بيانات مستفيدين ➕":
                 
     with tab_excel:
         st.subheader("📥 ارفع ملف الحالات دفعة واحدة")
-        st.markdown("تأكد أن يحتوي الملف على الأعمدة التالية تماماً: `العائلة`, `عدد_أفراد_الأسرة`, `الدخل_الشهري_SAR`, `نوع_الدعم_المطلوب`, `حالة_الطلب`")
-        
-        uploaded_file_b = st.file_uploader("اختر ملف Excel أو CSV الخاص بالمستفيدين:", type=['csv', 'xlsx'])
-        if uploaded_file_b is not None:
-            if uploaded_file_b.name.endswith('.csv'):
-                uploaded_df_b = pd.read_csv(uploaded_file_b)
-            else:
-                uploaded_df_b = pd.read_excel(uploaded_file_b)
-            
-            st.write("👀 عينة من الحالات المكتشفة داخل ملفك:")
-            st.dataframe(uploaded_df_b.head(5))
-            
