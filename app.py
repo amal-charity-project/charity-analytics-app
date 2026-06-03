@@ -298,6 +298,36 @@ elif sidebar_choice == "البوت المساعد الذكي":
         # عرض السؤال الحالي الذي تمت معالجته للتأكيد قبل تصفير الخانة
         st.markdown(f"**💬 سؤالك الحالي:** *{q_clean}*")
 
+       # --- البوت المساعد الذكي والتحليلي فائق الدقة مع ميزة التصفير التلقائي ---
+elif sidebar_choice == "البوت المساعد الذكي":
+    st.header("🤖 مساعد الخير الذكي والتحليلي")
+    st.write("اسألني أي سؤال تحليلي (مثال: كم مجموع تبرعات جدة ومكة؟ ما هو تنبؤ تبرعات مكة؟)")
+    
+    # بناء استمارة ذكية تقوم بتصفير ومسح خانة الكتابة تلقائياً فور إرسال السؤال
+    with st.form("ai_bot_form", clear_on_submit=True):
+        q = st.text_input("🔍 اكتب سؤالك الذكي هنا واضغط على زر الإرسال بالأسفل:")
+        submit_question = st.form_submit_button("إرسال السؤال إلى البوت 🚀")
+    
+    if submit_question and q:
+        q_clean = q.strip()
+        
+        # دالة ذكية لتحديد كافة المدن المذكورة في السؤال
+        detected_cities = []
+        for city in ['الرياض', 'جدة', 'الدمام', 'مكة', 'المدينة']:
+            if city in q_clean:
+                detected_cities.append(city)
+                
+        # دالة ذكية لتحديد نوع الدعم المذكور في السؤال
+        detected_support = None
+        support_map = {'سكن': 'سكني', 'غذاء': 'غذائي', 'صحي': 'صحي', 'تعليم': 'تعليمي'}
+        for key, val in support_map.items():
+            if key in q_clean:
+                detected_support = val
+                break
+
+        # عرض السؤال الحالي الذي تمت معالجته للتأكيد قبل تصفير الخانة
+        st.markdown(f"**💬 سؤالك الحالي:** *{q_clean}*")
+
         # 1. معالجة أسئلة المتبرعين والتبرعات والذكاء الاصطناعي التنبؤي
         if "متبرع" in q_clean or "تبرع" in q_clean or "مبلغ" in q_clean or "مجموع" in q_clean or "إجمالي" in q_clean or "تنبؤ" in q_clean:
             # حالة طلب التنبؤ عبر الذكاء الاصطناعي
@@ -359,6 +389,7 @@ elif sidebar_choice == "البوت المساعد الذكي":
                 st.dataframe(res_b, use_container_width=True)
             else:
                 st.warning("⚠️ لم أفهم الاستفسار بدقة، جرب كتابة: 'ما هو تنبؤ تبرعات مكة' أو 'إجمالي تبرعات مكة وجدة'.")
+
 
 
 
