@@ -207,7 +207,10 @@ elif sidebar_choice == "التحليلات التنبؤية (AI)":
             
             input_data = np.array([[user_age, user_freq]], dtype=np.float64)
             prediction = lr.predict(input_data)
-            st.success(f"💰 التبرع السنوي المتوقع: {int(max(0, prediction))} SAR")
+                   val_final = int(max(0, prediction))
+        msg = f"SAR {val_final}"
+        st.success(msg)
+
             st.write("📌 المنهج المستخدم: الانحدار الخطي المتعدد.")
             
         with tab2:
