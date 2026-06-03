@@ -13,7 +13,7 @@ def fix_arabic(text_to_fix):
     reshaped = arabic_reshaper.reshape(str(text_to_fix))
     return get_display(reshaped)
 
-# 1. إعدادات الصفحة
+# 1. إعدادات الصفحة الرئيسية
 st.set_page_config(
     page_title="منصة الخير الذكية", 
     layout="wide", 
@@ -33,7 +33,6 @@ if 'df_donors' not in st.session_state:
         'عدد_مرات_التبرع': np.random.randint(1, 12, size=n_records),
         'احتمالية_التبرع_المستقبلي_%': np.random.randint(40, 99, size=n_records)
     })
-
 if 'df_beneficiaries' not in st.session_state:
     np.random.seed(42)
     n_records = 1000
@@ -73,7 +72,6 @@ with st.sidebar:
             "البوت المساعد الذكي"
         ]
     )
-
 # --- لوحة تحكم المتبرعين ---
 if sidebar_choice == "لوحة تحكم المتبرعين":
     st.header("👥 قاعدة بيانات وإحصاءات المتبرعين")
@@ -81,16 +79,14 @@ if sidebar_choice == "لوحة تحكم المتبرعين":
     col1.metric("إجمالي المتبرعين", f"{len(df_donors)} متبرع")
     col2.metric("إجمالي التبرعات (SAR)", f"{df_donors['مجموع_التبرعات_السنوية_SAR'].sum():,}")
     col3.metric("متوسط التبرع", f"{int(df_donors['مجموع_التبرعات_السنوية_SAR'].mean()):,} SAR")
-    
     st.download_button("📥 تحميل قاعدة البيانات", data=convert_df_to_csv(df_donors), file_name='donors_database.csv', mime='text/csv')
     
-    # واجهة الحذف للمتبرعين
     st.subheader("🗑️ إدارة وحذف المتبرعين من النظام")
     delete_id = st.text_input("اكتب معرف المتبرع المراد حذفه بدقة (مثال: D-5):")
     if st.button("❌ حذف المتبرع نهائياً وتحديث النظام"):
         if delete_id in df_donors['المعرف'].values:
             st.session_state.df_donors = df_donors[df_donors['المعرف'] != delete_id].reset_index(drop=True)
-            st.success(f"✅ تم حذف المتبرع ذو المعرف {delete_id} وحفظ التعديلات بنجاح!")
+            st.success(f"✅ تم حذف المتبرع {delete_id} وحفظ التعديلات!")
             st.rerun()
         else:
             st.error("⚠️ المعرف غير موجود، يرجى التحقق من الجدول بالأسفل.")
@@ -102,6 +98,7 @@ if sidebar_choice == "لوحة تحكم المتبرعين":
     ax.set_title(fix_arabic('توزيع المتبرعين حسب المدن'))
     st.pyplot(fig)
     st.dataframe(df_donors, use_container_width=True)
+
 # --- إدخل بيانات متبرعين ➕ ---
 elif sidebar_choice == "إدخل بيانات متبرعين ➕":
     st.header("📝 إضافة بيانات المتبرعين")
@@ -148,13 +145,12 @@ elif sidebar_choice == "لوحة تحكم المستفيدين":
     col3.metric("متوسط عدد الأفراد", f"{int(df_beneficiaries['عدد_أفراد_الأسرة'].mean())} أفراد")
     st.download_button("📥 تحميل قاعدة البيانات", data=convert_df_to_csv(df_beneficiaries), file_name='beneficiaries_database.csv', mime='text/csv')
     
-    # واجهة الحذف للمستفيدين
     st.subheader("🗑️ إدارة وحذف المستفيدين من النظام")
     delete_id_b = st.text_input("اكتب معرف العائلة المراد حذفها بدقة (مثال: B-5):")
     if st.button("❌ حذف العائلة نهائياً وتحديث النظام"):
         if delete_id_b in df_beneficiaries['المعرف'].values:
             st.session_state.df_beneficiaries = df_beneficiaries[df_beneficiaries['المعرف'] != delete_id_b].reset_index(drop=True)
-            st.success(f"✅ تم حذف العائلة ذات المعرف {delete_id_b} وحفظ التعديلات بنجاح!")
+            st.success(f"✅ تم حذف العائلة {delete_id_b} وحفظ التعديلات!")
             st.rerun()
         else:
             st.error("⚠️ المعرف غير موجود، يرجى التحقق من الجدول بالأسفل.")
@@ -167,14 +163,13 @@ elif sidebar_choice == "لوحة تحكم المستفيدين":
     ax.set_title(fix_arabic('توزيع نوع الدعم المطلوب'))
     st.pyplot(fig)
     st.dataframe(df_beneficiaries, use_container_width=True)
-
 # --- إدخل بيانات مستفيدين ➕ ---
 elif sidebar_choice == "إدخل بيانات مستفيدين ➕":
     st.header("📝 تسجيل حالات المستفيدين")
-    tab_manual, tab_excel = st.tabs(["✍️ إدخال يدوي لحالة واحدة", "📁 رفع جماعي عبر ملف Excel"])
+    tab_manual, tab_excel = st.tabs(["✍️ إدخال يدوي لحالة واحدة", "📁 رفع جماعي Excel"])
     with tab_manual:
         with st.form("beneficiary_form", clear_on_submit=True):
-            b_family = st.text_input("اسم العائلة / المستفيد الرئيسي:")
+            b_family = st.text_input("اسم العائلة:")
             b_members = st.slider("عدد أفراد الأسرة:", 1, 15, 5)
             b_income = st.number_input("الدخل الشهري الحالي (SAR):", min_value=0, value=2000)
             b_type = st.selectbox("نوع الدعم المطلوب:", ['سكني', 'غذائي', 'صحي', 'تعليمي'])
@@ -249,7 +244,7 @@ elif sidebar_choice == "🧠 تعلم مفاهيم الإحصاء في هذا ا
         st.write(f"📊 {fix_arabic('المتوسط الحسابي')}: {int(mean_inc):,} SAR")
         st.write(f"📊 {fix_arabic('الوسيط الإحصائي')}: {int(median_inc):,} SAR")
 
-# --- البوت المساعد الذكي والتحليلي فائق الدقة المحدث والمسح التلقائي ---
+# --- البوت المساعد الذكي ---
 elif sidebar_choice == "البوت المساعد الذكي":
     st.header("🤖 مساعد الخير الذكي والتحليلي")
     st.write("اسألني أي سؤال تحليلي (مثال: كم مجموع تبرعات جدة ومكة؟ عدد المستفيدين بالسكن)")
@@ -264,3 +259,63 @@ elif sidebar_choice == "البوت المساعد الذكي":
         for city in ['الرياض', 'جدة', 'الدمام', 'مكة', 'المدينة']:
             if city in q_clean:
                 detected_cities.append(city)
+                
+        detected_support = None
+        support_map = {'سكن': 'سكني', 'غذاء': 'غذائي', 'صح': 'صحي', 'تعليم': 'تعليمي'}
+        for key, val in support_map.items():
+            if key in q_clean:
+                detected_support = val
+                break
+
+        st.markdown(f"**💬 سؤالك الحالي:** *{q_clean}*")
+
+        if "متبرع" in q_clean or "تبرع" in q_clean or "مبلغ" in q_clean or "مجموع" in q_clean or "إجمالي" in q_clean or "تنبؤ" in q_clean:
+            if "تنبؤ" in q_clean or "متوقع" in q_clean:
+                X_model = df_donors[['العمر', 'عدد_مرات_التبرع']].values
+                y_model = df_donors['مجموع_التبرعات_السنوية_SAR'].values
+                lr = LinearRegression().fit(X_model, y_model)
+                if detected_cities:
+                    sub_df = df_donors[df_donors['المدينة'].isin(detected_cities)]
+                    avg_age = sub_df['العمر'].mean() if not sub_df.empty else 35
+                    avg_freq = sub_df['عدد_مرات_التبرع'].mean() if not sub_df.empty else 5
+                else:
+                    avg_age = df_donors['العمر'].mean()
+                    avg_freq = df_donors['عدد_مرات_التبرع'].mean()
+                pred = lr.predict(np.array([[avg_age, avg_freq]], dtype=np.float64))
+                cities_names = " و ".join(detected_cities) if detected_cities else "العام"
+                st.success(f"🔮 التنبؤ المالي لمتوسط التبرعات مستقبلاً من ({cities_names}) هو: {int(max(0, pred)):,} SAR")
+            elif detected_cities:
+                sub_df = df_donors[df_donors['المدينة'].isin(detected_cities)]
+                cities_names = " و ".join(detected_cities)
+                if "مجموع" in q_clean or "إجمالي" in q_clean or "مبالغ" in q_clean or "تبرعات" in q_clean and "كم" not in q_clean:
+                    total_val = sub_df['مجموع_التبرعات_السنوية_SAR'].sum()
+                    st.success(f"💰 إجمالي مبالغ التبرعات الحالية من ({cities_names}) هو: {total_val:,} SAR")
+                elif "عدد" in q_clean or "كم" in q_clean:
+                    st.success(f"📍 عدد المتبرعين الحالي من ({cities_names}) هو: {len(sub_df)} متبرع.")
+                else:
+                    total_val = sub_df['مجموع_التبرعات_السنوية_SAR'].sum()
+                    st.success(f"💰 إجمالي مبالغ التبرعات الحالية من ({cities_names}) هو: {total_val:,} SAR")
+            else:
+                if "عدد" in q_clean or "كم" in q_clean:
+                    st.success(f"📊 إجمالي عدد المتبرعين المسجلين هو: {len(df_donors)} متبرع.")
+                else:
+                    total_val = df_donors['مجموع_التبرعات_السنوية_SAR'].sum()
+                    st.success(f"💰 إجمالي التبرعات العام الحالي في الصندوق: {total_val:,} SAR")
+
+        elif "مستفيد" in q_clean or "حالة" in q_clean or "أسرة" in q_clean or "عائلة" in q_clean:
+            if detected_support:
+                sub_df = df_beneficiaries[df_beneficiaries['نوع_الدعم_المطلوب'] == detected_support]
+                st.success(f"📊 عدد الأسر التي تطلب دعماً ({detected_support}) هو: {len(sub_df)} أسرة.")
+            else:
+                st.success(f"🏡 إجمالي عدد الأسر المستفيدة المسجلة هو: {len(df_beneficiaries)} أسرة.")
+        else:
+            res_d = df_donors[df_donors['الاسم'].str.contains(q_clean, na=False)]
+            res_b = df_beneficiaries[df_beneficiaries['العائلة'].str.contains(q_clean, na=False)]
+            if not res_d.empty:
+                st.write("📌 نتائج البحث في المتبرعين:")
+                st.dataframe(res_d, use_container_width=True)
+            elif not res_b.empty:
+                st.write("📌 نتائج البحث في المستفيدين:")
+                st.dataframe(res_b, use_container_width=True)
+            else:
+                st.warning("⚠️ لم أفهم الاستفسار بدقة، جرب صياغة مثل: 'كم مجموع تبرعات جدة ومكة'.")
