@@ -245,16 +245,16 @@ elif sidebar_choice == "🧠 تعلم مفاهيم الإحصاء في هذا ا
         st.write(f"📊 {fix_arabic('المتوسط الحسابي')}: {int(mean_inc):,} SAR")
         st.write(f"📊 {fix_arabic('الوسيط الإحصائي')}: {int(median_inc):,} SAR")
 
-# --- البوت المساعد الذكي والتحليلي فائق الدقة لدعم المدن المتعددة ---
+# --- البوت المساعد الذكي والتحليلي فائق الدقة لدعم المدن المتعددة والتنبؤ ---
 elif sidebar_choice == "البوت المساعد الذكي":
     st.header("🤖 مساعد الخير الذكي والتحليلي")
-    st.write("اسألني أي سؤال تحليلي (مثال: كم مجموع تبرعات جدة ومكة؟ كم متبرع من مكة والرياض؟)")
+    st.write("اسألني أي سؤال تحليلي (مثال: كم مجموع تبرعات جدة ومكة؟ ما هو تنبؤ تبرعات مكة؟)")
     
     q = st.text_input("🔍 اكتب سؤالك الذكي هنا:")
     if q:
         q_clean = q.strip()
         
-        # دالة ذكية لتحديد كافة المدن المذكورة في السؤال (دعم المدن المتعددة)
+        # دالة ذكية لتحديد كافة المدن المذكورة في السؤال
         detected_cities = []
         for city in ['الرياض', 'جدة', 'الدمام', 'مكة', 'المدينة']:
             if city in q_clean:
@@ -268,38 +268,52 @@ elif sidebar_choice == "البوت المساعد الذكي":
                 detected_support = val
                 break
 
-        # 1. معالجة أسئلة المتبرعين والتبرعات (دعم مكة وجدة معاً)
-        if "متبرع" in q_clean or "تبرع" in q_clean or "مبلغ" in q_clean or "مجموع" in q_clean or "إجمالي" in q_clean:
-            # فلترة حسب المدن إذا ذكرت مدينة أو أكثر
-            if detected_cities:
+        # 1. معالجة أسئلة المتبرعين والتبرعات والذكاء الاصطناعي التنبؤي
+        if "متبرع" in q_clean or "تبرع" in q_clean or "مبلغ" in q_clean or "مجموع" in q_clean or "إجمالي" in q_clean or "تنبؤ" in q_clean:
+            # حالة طلب التنبؤ عبر الذكاء الاصطناعي
+            if "تنبؤ" in q_clean or "متوقع" in q_clean:
+                X_model = df_donors[['العمر', 'عدد_مرات_التبرع']].values
+                y_model = df_donors['مجموع_التبرعات_السنوية_SAR'].values
+                lr = LinearRegression().fit(X_model, y_model)
+                
+                # حساب متوسط تبرعات المدينة المحددة مستقبلياً
+                if detected_cities:
+                    sub_df = df_donors[df_donors['المدينة'].isin(detected_cities)]
+                    avg_age = sub_df['العمر'].mean() if not sub_df.empty else 35
+                    avg_freq = sub_df['عدد_مرات_التبرع'].mean() if not sub_df.empty else 5
+                else:
+                    avg_age = df_donors['العمر'].mean()
+                    avg_freq = df_donors['عدد_مرات_التبرع'].mean()
+                    
+                pred = lr.predict(np.array([[avg_age, avg_freq]], dtype=np.float64))
+                cities_names = " و ".join(detected_cities) if detected_cities else "العام"
+                st.success(f"🔮 التنبؤ المالي الذكي لمتوسط التبرعات القادمة مستقبلاً من ({cities_names}) هو: {int(max(0, pred[0])):,} SAR")
+            
+            # حالة طلب المجاميع والأعداد الحالية الحية
+            elif detected_cities:
                 sub_df = df_donors[df_donors['المدينة'].isin(detected_cities)]
                 cities_names = " و ".join(detected_cities)
                 
-                # فحص دقيق: هل السؤال يطلب مبالغ مالية أم أعداد أشخاص؟
                 if "مجموع" in q_clean or "إجمالي" in q_clean or "مبالغ" in q_clean or "تبرعات" in q_clean and "كم" not in q_clean:
                     total_val = sub_df['مجموع_التبرعات_السنوية_SAR'].sum()
-                    st.success(f"💰 إجمالي مبالغ التبرعات القادمة من ({cities_names}) هو: {total_val:,} SAR")
+                    st.success(f"💰 إجمالي مبالغ التبرعات الحالية من ({cities_names}) هو: {total_val:,} SAR")
                 elif "عدد" in q_clean or "كم" in q_clean:
-                    st.success(f"📍 عدد المتبرعين من ({cities_names}) هو: {len(sub_df)} متبرع.")
+                    st.success(f"📍 عدد المتبرعين الحالي من ({cities_names}) هو: {len(sub_df)} متبرع.")
                 else:
                     total_val = sub_df['مجموع_التبرعات_السنوية_SAR'].sum()
-                    st.success(f"💰 إجمالي مبالغ التبرعات القادمة من ({cities_names}) هو: {total_val:,} SAR")
-            
-            # إجمالي عام إذا لم تذكر مدينة محددة
+                    st.success(f"💰 إجمالي مبالغ التبرعات الحالية من ({cities_names}) هو: {total_val:,} SAR")
             else:
                 if "عدد" in q_clean or "كم" in q_clean:
                     st.success(f"📊 إجمالي عدد المتبرعين المسجلين هو: {len(df_donors)} متبرع.")
                 else:
                     total_val = df_donors['مجموع_التبرعات_السنوية_SAR'].sum()
-                    st.success(f"💰 إجمالي التبرعات العام في الصندوق السنوي: {total_val:,} SAR")
+                    st.success(f"💰 إجمالي التبرعات العام الحالي في الصندوق: {total_val:,} SAR")
 
         # 2. معالجة أسئلة المستفيدين والحالات
         elif "مستفيد" in q_clean or "حالة" in q_clean or "أسرة" in q_clean or "عائلة" in q_clean:
-            # فلترة حسب نوع الدعم إذا ذكر
             if detected_support:
                 sub_df = df_beneficiaries[df_beneficiaries['نوع_الدعم_المطلوب'] == detected_support]
                 st.success(f"📊 عدد الأسر التي تطلب دعماً ({detected_support}) هو: {len(sub_df)} أسرة.")
-            # إجمالي عام للمستفيدين
             else:
                 st.success(f"🏡 إجمالي عدد الأسر المستفيدة المسجلة هو: {len(df_beneficiaries)} أسرة.")
 
@@ -315,7 +329,8 @@ elif sidebar_choice == "البوت المساعد الذكي":
                 st.write("📌 نتائج البحث في المستفيدين:")
                 st.dataframe(res_b, use_container_width=True)
             else:
-                st.warning("⚠️ لم أفهم الاستفسار التحليلي بدقة. جرب صياغة أخرى مثل: 'كم مجموع تبرعات جدة ومكة'.")
+                st.warning("⚠️ لم أفهم الاستفسار بدقة، جرب كتابة: 'ما هو تنبؤ تبرعات مكة' أو 'إجمالي تبرعات مكة وجدة'.")
+
 
 
 
