@@ -79,54 +79,85 @@ elif choice == "Beneficiaries":
     st.header("🏡 قاعدة بيانات وإحصاءات المستفيدين")
     st.dataframe(df_b_ar, use_container_width=True)
 elif choice == "CRUD":
-    st.header("🛠️ مركز البحث والتعديل السحابي للسجلات")
-    t_d, t_b = st.tabs(["👥 تعديل المتبرعين", "🏡 تعديل المستفيدين"])
+    st.header("🛠️ مركز الإدارة والتحكم الشامل بالسجلات")
+    t_d, t_b = st.tabs(["👥 المتبرعين", "🏡 المستفيدين"])
     
     with t_d:
-        st.subheader("🔍 ابحث عن معرف المتبرع لتعديل بياناته")
-        s_id = st.text_input("ادخل معرف المتبرع (مثال: D-1):")
-        if s_id in df_donors['ID'].values:
-            idx = df_donors[df_donors['ID'] == s_id].index
-            st.success("✅ تم العثور على السجل")
-            
-            with st.form("edit_d_form"):
-                ed_name = st.text_input("الاسم الكامل:", value=df_donors.at[idx[0], 'Name'])
-                ed_age = st.number_input("العمر الحاضر:", 18, 100, int(df_donors.at[idx[0], 'Age']))
-                ed_city = st.selectbox("المدينة:", ['Riyadh', 'Jeddah', 'Dammam', 'Makkah', 'Madinah'], index=['Riyadh', 'Jeddah', 'Dammam', 'Makkah', 'Madinah'].index(df_donors.at[idx[0], 'City']))
-                ed_amt = st.number_input("التبرعات (SAR):", 0, 100000, int(df_donors.at[idx[0], 'Amount']))
-                ed_frq = st.number_input("عدد المرات سنوياً:", 1, 50, int(df_donors.at[idx[0], 'Freq']))
-                
-                if st.form_submit_button("💾 حفظ وتحديث السجل"):
-                    st.session_state.df_donors.at[idx[0], 'Name'] = ed_name
-                    st.session_state.df_donors.at[idx[0], 'Age'] = int(ed_age)
-                    st.session_state.df_donors.at[idx[0], 'City'] = ed_city
-                    st.session_state.df_donors.at[idx[0], 'Amount'] = int(ed_amt)
-                    st.session_state.df_donors.at[idx[0], 'Freq'] = int(ed_frq)
-                    st.success("✅ تم التعديل بنجاح!")
+        col_a, col_b = st.columns(2)
+        with col_a:
+            st.subheader("➕ إضافة متبرع جديد")
+            with st.form("add_d_form", clear_on_submit=True):
+                n_name = st.text_input("الاسم الكامل:")
+                n_age = st.number_input("العمر:", 18, 100, 35)
+                n_city = st.selectbox("المدينة:", ['Riyadh', 'Jeddah', 'Dammam', 'Makkah', 'Madinah'])
+                n_amount = st.number_input("التبرع السنوي:", 0, 50000, 1000)
+                n_freq = st.number_input("المرات سنوياً:", 1, 50, 2)
+                if st.form_submit_button("إضافة وتحديث قاعدة البيانات 💾"):
+                    new_r = {'ID': f'D-{len(df_donors)+1}', 'Name': n_name, 'Age': int(n_age), 'City': n_city, 'Amount': int(n_amount), 'Freq': int(n_freq), 'Prob': 85}
+                    st.session_state.df_donors = pd.concat([df_donors, pd.DataFrame([new_r])], ignore_index=True)
+                    st.success("✅ تم الإضافة بنجاح!")
+                    st.rerun()
+        with col_b:
+            st.subheader("🔍 البحث والتعديل والحذف")
+            s_id = st.text_input("ادخل المعرف للتعديل أو الحذف (D-1):")
+            if s_id in df_donors['ID'].values:
+                idx = df_donors[df_donors['ID'] == s_id].index
+                st.warning(f"📋 الاسم: {df_donors.at[idx[0], 'Name']}")
+                with st.form("edit_d_form"):
+                    ed_name = st.text_input("الاسم الكامل:", value=df_donors.at[idx[0], 'Name'])
+                    ed_age = st.number_input("العمر:", 18, 100, int(df_donors.at[idx[0], 'Age']))
+                    ed_city = st.selectbox("المدينة:", ['Riyadh', 'Jeddah', 'Dammam', 'Makkah', 'Madinah'], index=['Riyadh', 'Jeddah', 'Dammam', 'Makkah', 'Madinah'].index(df_donors.at[idx[0], 'City']))
+                    ed_amt = st.number_input("التبرعات:", 0, 100000, int(df_donors.at[idx[0], 'Amount']))
+                    ed_frq = st.number_input("التكرار السنوي:", 1, 50, int(df_donors.at[idx[0], 'Freq']))
+                    if st.form_submit_button("💾 حفظ التعديلات الجديدة"):
+                        st.session_state.df_donors.at[idx[0], 'Name'] = ed_name
+                        st.session_state.df_donors.at[idx[0], 'Age'] = int(ed_age)
+                        st.session_state.df_donors.at[idx[0], 'City'] = ed_city
+                        st.session_state.df_donors.at[idx[0], 'Amount'] = int(ed_amt)
+                        st.session_state.df_donors.at[idx[0], 'Freq'] = int(ed_frq)
+                        st.success("✅ تم تحديث السجل!")
+                        st.rerun()
+                if st.button("🗑️ حذف هذا المتبرع نهائياً من الصندوق"):
+                    st.session_state.df_donors = df_donors[df_donors['ID'] != s_id].reset_index(drop=True)
+                    st.success("✅ تم حذف السجل وحفظ التعديلات!")
+                    st.rerun()
+    with t_b:
+        col_c, col_d = st.columns(2)
+        with col_c:
+            st.subheader("➕ إضافة مستفيد جديد")
+            with st.form("add_b_form", clear_on_submit=True):
+                n_fam = st.text_input("اسم العائلة:")
+                n_mem = st.slider("الأفراد:", 1, 15, 5)
+                n_inc = st.number_input("الدخل الشهري:", 0, 50000, 2000)
+                n_type = st.selectbox("نوع الدعم:", ['Home', 'Food', 'Health', 'Edu'])
+                if st.form_submit_button("إضافة وتحديث الحالات 💾"):
+                    new_b = {'ID': f'B-{len(df_beneficiaries)+1}', 'Family': n_fam, 'Members': int(n_mem), 'Income': int(n_inc), 'Type': n_type, 'Status': 'Wait', 'Need': 'Med'}
+                    st.session_state.df_beneficiaries = pd.concat([df_beneficiaries, pd.DataFrame([new_b])], ignore_index=True)
+                    st.success("✅ تم إضافة العائلة!")
+                    st.rerun()
+        with col_d:
+            st.subheader("🔍 البحث والتعديل والحذف")
+            s_id_b = st.text_input("ادخل المعرف للتعديل أو الحذف (B-1):")
+            if s_id_b in df_beneficiaries['ID'].values:
+                idx_b = df_beneficiaries[df_beneficiaries['ID'] == s_id_b].index
+                st.warning(f"📋 العائلة: {df_beneficiaries.at[idx_b[0], 'Family']}")
+                with st.form("edit_b_form"):
+                    ed_fam = st.text_input("اسم العائلة:", value=df_beneficiaries.at[idx_b[0], 'Family'])
+                    ed_mem = st.slider("أفراد الأسرة:", 1, 15, int(df_beneficiaries.at[idx_b[0], 'Members']))
+                    ed_inc = st.number_input("الدخل الشهري:", 0, 100000, int(df_beneficiaries.at[idx_b[0], 'Income']))
+                    ed_type = st.selectbox("نوع الدعم:", ['Home', 'Food', 'Health', 'Edu'], index=['Home', 'Food', 'Health', 'Edu'].index(df_beneficiaries.at[idx_b[0], 'Type']))
+                    if st.form_submit_button("💾 حفظ تعديلات العائلة الجديدة"):
+                        st.session_state.df_beneficiaries.at[idx_b[0], 'Family'] = ed_fam
+                        st.session_state.df_beneficiaries.at[idx_b[0], 'Members'] = int(ed_mem)
+                        st.session_state.df_beneficiaries.at[idx_b[0], 'Income'] = int(ed_inc)
+                        st.session_state.df_beneficiaries.at[idx_b[0], 'Type'] = ed_type
+                        st.success("✅ تم تحديث بيانات العائلة!")
+                        st.rerun()
+                if st.button("🗑️ حذف هذه العائلة نهائياً من النظام"):
+                    st.session_state.df_beneficiaries = df_beneficiaries[df_beneficiaries['ID'] != s_id_b].reset_index(drop=True)
+                    st.success("✅ تم حذف العائلة بنجاح!")
                     st.rerun()
 
-    with t_b:
-        st.subheader("🔍 ابحث عن معرف العائلة لتعديل بياناتها")
-        s_id_b = st.text_input("ادخل معرف العائلة (مثال: B-1):")
-        if s_id_b in df_beneficiaries['ID'].values:
-            idx_b = df_beneficiaries[df_beneficiaries['ID'] == s_id_b].index
-            st.success("✅ تم العثور على سجل العائلة")
-            
-            with st.form("edit_b_form"):
-                ed_fam = st.text_input("اسم العائلة:", value=df_beneficiaries.at[idx_b[0], 'Family'])
-                ed_mem = st.slider("أفراد الأسرة:", 1, 15, int(df_beneficiaries.at[idx_b[0], 'Members']))
-                ed_inc = st.number_input("الدخل (SAR):", 0, 100000, int(df_beneficiaries.at[idx_b[0], 'Income']))
-                ed_type = st.selectbox("الدعم المطلوب:", ['Home', 'Food', 'Health', 'Edu'], index=['Home', 'Food', 'Health', 'Edu'].index(df_beneficiaries.at[idx_b[0], 'Type']))
-                ed_stat = st.selectbox("حالة الطلب:", ['Ok', 'Wait', 'Done'], index=['Ok', 'Wait', 'Done'].index(df_beneficiaries.at[idx_b[0], 'Status']))
-                
-                if st.form_submit_button("💾 حفظ وتحديث العائلة"):
-                    st.session_state.df_beneficiaries.at[idx_b[0], 'Family'] = ed_fam
-                    st.session_state.df_beneficiaries.at[idx_b[0], 'Members'] = int(ed_mem)
-                    st.session_state.df_beneficiaries.at[idx_b[0], 'Income'] = int(ed_inc)
-                    st.session_state.df_beneficiaries.at[idx_b[0], 'Type'] = ed_type
-                    st.session_state.df_beneficiaries.at[idx_b[0], 'Status'] = ed_stat
-                    st.success("✅ تم التعديل بنجاح!")
-                    st.rerun()
 elif choice == "AI":
     st.header("🔮 قسم التحليلات التنبؤية الذكي")
     t1, t2 = st.tabs(["📉 Linear Regression", "🎯 K-Means"])
@@ -157,7 +188,6 @@ elif choice == "Bot":
     with st.form("ai_bot_form", clear_on_submit=True):
         q = st.text_input("🔍 اكتب سؤالك هنا واضغط زر الإرسال بالأسفل:")
         submit_question = st.form_submit_button("إرسال السؤال إلى البوت 🚀")
-        
     if submit_question and q:
         q_c = q.strip()
         st.markdown(f"💬 *{q_c}*")
@@ -172,7 +202,6 @@ elif choice == "Bot":
             if k_t in q_c:
                 sel_t = v_t
                 break
-
         if "متبرع" in q_c or "تبرع" in q_c or "مبلغ" in q_c or "مجموع" in q_c or "إجمالي" in q_c or "تنبؤ" in q_c:
             if "تنبؤ" in q_c or "متوقع" in q_c:
                 X_m = df_donors[['Age', 'Freq']].values
@@ -182,8 +211,7 @@ elif choice == "Bot":
                 avg_age = sub['Age'].mean() if not sub.empty else 35
                 avg_fr = sub['Freq'].mean() if not sub.empty else 5
                 p_b = lr_b.predict(np.array([[avg_age, avg_fr]], dtype=np.float64))
-                # إصلاح خطأ الأقواس البرمجية للـ f-string السحابية نهائياً هنا
-                st.success(f"🔮 SAR {int(max(0, p_b[0]))}")
+                st.success(f"🔮 SAR {int(max(0, p_b))}")
             elif c_list:
                 sub = df_donors[df_donors['City'].isin(c_list)]
                 if "مجموع" in q_c or "إجمالي" in q_c or "مبالغ" in q_c or "تبرعات" in q_c and "كم" not in q_c:
