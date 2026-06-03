@@ -91,7 +91,6 @@ if sidebar_choice == "لوحة تحكم المتبرعين":
 # --- إدخال متبرع جديد (يدوي أو عبر إكسيل) ---
 elif sidebar_choice == "إدخل بيانات متبرعين ➕":
     st.header("📝 إضافة بيانات المتبرعين")
-    
     tab_manual, tab_excel = st.tabs(["✍️ إدخال يدوي لمتبرع واحد", "📁 رفع جماعي عبر ملف Excel / CSV"])
     
     with tab_manual:
@@ -162,7 +161,6 @@ elif sidebar_choice == "لوحة تحكم المستفيدين":
 # --- إدخال مستفيد جديد (يدوي أو عبر إكسيل) ---
 elif sidebar_choice == "إدخل بيانات مستفيدين ➕":
     st.header("📝 تسجيل حالات المستفيدين")
-    
     tab_manual, tab_excel = st.tabs(["✍️ إدخال يدوي لحالة واحدة", "📁 رفع جماعي عبر ملف Excel / CSV"])
     
     with tab_manual:
