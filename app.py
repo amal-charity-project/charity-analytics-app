@@ -168,7 +168,8 @@ elif choice == "AI":
         s1 = st.slider("Age:", 18, 80, 35)
         s2 = st.slider("Freq:", 1, 24, 5)
         pred = lr.predict(np.array([[s1, s2]], dtype=np.float64))
-        val_f = int(max(0, pred))
+        # التعديل الحاسم: استخراج العنصر المفرد الصريح [0] من المصفوفة لمنع خطأ الـ TypeError نهائياً
+        val_f = int(max(0, pred[0]))
         st.success(f"💰 SAR {val_f}")
     with t2:
         X_c = df_donors[['Freq', 'Amount']].dropna().copy()
@@ -182,7 +183,6 @@ elif choice == "AI":
 
 elif choice == "Stats":
     st.header("🧠 معمل الإحصاء التعليمي")
-    # إصلاح خطأ النص الإنجليزي المعكوس ليعرض العبارة العربية المستقيمة تماماً
     st.metric(fix_arabic("الانحراف المعياري للمبالغ"), f"{int(df_donors['Amount'].std()):,}")
 
 elif choice == "Bot":
@@ -218,7 +218,8 @@ elif choice == "Bot":
                 avg_age = sub['Age'].mean() if not sub.empty else 35
                 avg_fr = sub['Freq'].mean() if not sub.empty else 5
                 p_b = lr_b.predict(np.array([[avg_age, avg_fr]], dtype=np.float64))
-                st.success(f"🔮 SAR {int(max(0, p_b))}")
+                # تطبيق الإصلاح الجذري [0] هنا أيضاً لحماية أمان البوت التنبئي
+                st.success(f"🔮 SAR {int(max(0, p_b[0]))}")
             elif c_list:
                 sub = df_donors[df_donors['City'].isin(c_list)]
                 if "مجموع" in q_c or "إجمالي" in q_c or "مبالغ" in q_c or "تبرعات" in q_c and "كم" not in q_c:
