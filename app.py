@@ -118,26 +118,23 @@ elif sidebar_choice == "إدخل بيانات متبرعين ➕":
         
         uploaded_file = st.file_uploader("اختر ملف Excel أو CSV الخاص بالمتبرعين:", type=['csv', 'xlsx'])
         if uploaded_file is not None:
-            try:
-                if uploaded_file.name.endswith('.csv'):
-                    uploaded_df = pd.read_csv(uploaded_file)
-                else:
-                    uploaded_df = pd.read_excel(uploaded_file)
+            if uploaded_file.name.endswith('.csv'):
+                uploaded_df = pd.read_csv(uploaded_file)
+            else:
+                uploaded_df = pd.read_excel(uploaded_file)
+            
+            st.write("👀 عينة من البيانات المكتشفة داخل ملفك:")
+            st.dataframe(uploaded_df.head(5))
+            
+            if st.button("🚀 دمج وتحديث قاعدة البيانات السحابية فوراً"):
+                start_id = len(df_donors) + 1
+                uploaded_df['المعرف'] = [f'D-{i}' for i in range(start_id, start_id + len(uploaded_df))]
+                if 'احتمالية_التبرع_المستقبلي_%' not in uploaded_df.columns:
+                    uploaded_df['احتمالية_التبرع_المستقبلي_%'] = np.random.randint(50, 95, size=len(uploaded_df))
                 
-                st.write("👀 عينة من البيانات المكتشفة داخل ملفك:")
-                st.dataframe(uploaded_df.head(5))
-                
-                if st.button("🚀 دمج وتحديث قاعدة البيانات السحابية فوراً"):
-                    start_id = len(df_donors) + 1
-                    uploaded_df['المعرف'] = [f'D-{i}' for i in range(start_id, start_id + len(uploaded_df))]
-                    if 'احتمالية_التبرع_المستقبلي_%' not in uploaded_df.columns:
-                        uploaded_df['احتمالية_التبرع_المستقبلي_%'] = np.random.randint(50, 95, size=len(uploaded_df))
-                    
-                    st.session_state.df_donors = pd.concat([df_donors, uploaded_df], ignore_index=True)
-                    st.success(f"🎉 نجاح! تم رفع ودمج {len(uploaded_df)} سجل متبرع جديد بنجاح وتحديث النظام التنبئي!")
-                    st.rerun()
-            except Exception as e:
-                st.error(f"❌ حدث خطأ أثناء قراءة الملف. التفاصيل: {e}")
+                st.session_state.df_donors = pd.concat([df_donors, uploaded_df], ignore_index=True)
+                st.success(f"🎉 نجاح! تم رفع ودمج {len(uploaded_df)} سجل متبرع جديد بنجاح وتحديث النظام التنبئي!")
+                st.rerun()
 
 # --- لوحة تحكم المستفيدين ---
 elif sidebar_choice == "لوحة تحكم المستفيدين":
@@ -187,9 +184,13 @@ elif sidebar_choice == "إدخل بيانات مستفيدين ➕":
         
         uploaded_file_b = st.file_uploader("اختر ملف Excel أو CSV الخاص بالمستفيدين:", type=['csv', 'xlsx'])
         if uploaded_file_b is not None:
-            try:
-                if uploaded_file_b.name.endswith('.csv'):
-                    uploaded_df_b = pd.read_csv(uploaded_file_b)
-                else:
-                    uploaded_df_b = pd.read_excel(uploaded_file_b)
-                
+            if uploaded_file_b.name.endswith('.csv'):
+                uploaded_df_b = pd.read_csv(uploaded_file_b)
+            else:
+                uploaded_df_b = pd.read_excel(uploaded_file_b)
+            
+            st.write("👀 عينة من الحالات المكتشفة داخل ملفك:")
+            st.dataframe(uploaded_df_b.head(5))
+            
+            if st.button("🚀 دمج وتحديث ملفات المستفيدين فوراً"):
+                start_id_b = len(df_beneficiaries) + 1
