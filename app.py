@@ -245,21 +245,20 @@ elif sidebar_choice == "🧠 تعلم مفاهيم الإحصاء في هذا ا
         st.write(f"📊 {fix_arabic('المتوسط الحسابي')}: {int(mean_inc):,} SAR")
         st.write(f"📊 {fix_arabic('الوسيط الإحصائي')}: {int(median_inc):,} SAR")
 
-# --- البوت المساعد الذكي التحليلي الشامل فائق الدقة ---
+# --- البوت المساعد الذكي والتحليلي فائق الدقة لدعم المدن المتعددة ---
 elif sidebar_choice == "البوت المساعد الذكي":
     st.header("🤖 مساعد الخير الذكي والتحليلي")
-    st.write("اسألني أي سؤال تحليلي (مثال: كم متبرع من مكة؟ كم مجموع تبرعات جدة؟ عدد مستفيدي التعليم؟)")
+    st.write("اسألني أي سؤال تحليلي (مثال: كم مجموع تبرعات جدة ومكة؟ كم متبرع من مكة والرياض؟)")
     
     q = st.text_input("🔍 اكتب سؤالك الذكي هنا:")
     if q:
         q_clean = q.strip()
         
-        # دالة ذكية لتحديد المدينة المذكورة في السؤال
-        detected_city = None
+        # دالة ذكية لتحديد كافة المدن المذكورة في السؤال (دعم المدن المتعددة)
+        detected_cities = []
         for city in ['الرياض', 'جدة', 'الدمام', 'مكة', 'المدينة']:
             if city in q_clean:
-                detected_city = city
-                break
+                detected_cities.append(city)
                 
         # دالة ذكية لتحديد نوع الدعم المذكور في السؤال
         detected_support = None
@@ -269,21 +268,22 @@ elif sidebar_choice == "البوت المساعد الذكي":
                 detected_support = val
                 break
 
-        # 1. معالجة أسئلة المتبرعين والتبرعات
+        # 1. معالجة أسئلة المتبرعين والتبرعات (دعم مكة وجدة معاً)
         if "متبرع" in q_clean or "تبرع" in q_clean or "مبلغ" in q_clean or "مجموع" in q_clean or "إجمالي" in q_clean:
-            # فلترة حسب المدينة إذا ذكرت
-            if detected_city:
-                sub_df = df_donors[df_donors['المدينة'] == detected_city]
+            # فلترة حسب المدن إذا ذكرت مدينة أو أكثر
+            if detected_cities:
+                sub_df = df_donors[df_donors['المدينة'].isin(detected_cities)]
+                cities_names = " و ".join(detected_cities)
                 
                 # فحص دقيق: هل السؤال يطلب مبالغ مالية أم أعداد أشخاص؟
                 if "مجموع" in q_clean or "إجمالي" in q_clean or "مبالغ" in q_clean or "تبرعات" in q_clean and "كم" not in q_clean:
                     total_val = sub_df['مجموع_التبرعات_السنوية_SAR'].sum()
-                    st.success(f"💰 إجمالي مبالغ التبرعات القادمة من مدينة {detected_city} هو: {total_val:,} SAR")
+                    st.success(f"💰 إجمالي مبالغ التبرعات القادمة من ({cities_names}) هو: {total_val:,} SAR")
                 elif "عدد" in q_clean or "كم" in q_clean:
-                    st.success(f"📍 عدد المتبرعين (الأشخاص) من مدينة {detected_city} هو: {len(sub_df)} متبرع.")
+                    st.success(f"📍 عدد المتبرعين من ({cities_names}) هو: {len(sub_df)} متبرع.")
                 else:
                     total_val = sub_df['مجموع_التبرعات_السنوية_SAR'].sum()
-                    st.success(f"💰 إجمالي مبالغ التبرعات القادمة من مدينة {detected_city} هو: {total_val:,} SAR")
+                    st.success(f"💰 إجمالي مبالغ التبرعات القادمة من ({cities_names}) هو: {total_val:,} SAR")
             
             # إجمالي عام إذا لم تذكر مدينة محددة
             else:
@@ -297,7 +297,7 @@ elif sidebar_choice == "البوت المساعد الذكي":
         elif "مستفيد" in q_clean or "حالة" in q_clean or "أسرة" in q_clean or "عائلة" in q_clean:
             # فلترة حسب نوع الدعم إذا ذكر
             if detected_support:
-                sub_df = df_beneficiaries[df_beneficiaries['نوع_Δعم_المطلوب'] == detected_support]
+                sub_df = df_beneficiaries[df_beneficiaries['نوع_الدعم_المطلوب'] == detected_support]
                 st.success(f"📊 عدد الأسر التي تطلب دعماً ({detected_support}) هو: {len(sub_df)} أسرة.")
             # إجمالي عام للمستفيدين
             else:
@@ -315,6 +315,7 @@ elif sidebar_choice == "البوت المساعد الذكي":
                 st.write("📌 نتائج البحث في المستفيدين:")
                 st.dataframe(res_b, use_container_width=True)
             else:
-                st.warning("⚠️ لم أفهم الاستفسار التحليلي. جرب صياغة أخرى مثل: 'كم مجموع تبرعات جدة' أو 'كم متبرع من مكة'.")
+                st.warning("⚠️ لم أفهم الاستفسار التحليلي بدقة. جرب صياغة أخرى مثل: 'كم مجموع تبرعات جدة ومكة'.")
+
 
 
