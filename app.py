@@ -104,9 +104,9 @@ elif sidebar_choice == "إدخل بيانات متبرعين ➕":
             
             if submit_donor and d_name:
                 new_row = {
-                    'المعرف': f'D-{len(df_donors)+1}', 'الاسم': d_name, 'العمر': d_age, 
-                    'المدينة': d_city, 'مجموع_التبرعات_السنوية_SAR': d_amount, 
-                    'عدد_مرات_التبرع': d_freq, 'احتمالية_التبرع_المستقبلي_%': 85
+                    'المعرف': f'D-{len(df_donors)+1}', 'الاسم': d_name, 'العمر': int(d_age), 
+                    'المدينة': d_city, 'مجموع_التبرعات_السنوية_SAR': int(d_amount), 
+                    'عدد_مرات_التبرع': int(d_freq), 'احتمالية_التبرع_المستقبلي_%': 85
                 }
                 st.session_state.df_donors = pd.concat([df_donors, pd.DataFrame([new_row])], ignore_index=True)
                 st.success(f"✅ تم حفظ المتبرع {d_name} بنجاح!")
@@ -171,8 +171,8 @@ elif sidebar_choice == "إدخل بيانات مستفيدين ➕":
             
             if submit_beneficiary and b_family:
                 new_row = {
-                    'المعرف': f'B-{len(df_beneficiaries)+1}', 'العائلة': b_family, 'عدد_أفراد_الأسرة': b_members,
-                    'الدخل_الشهري_SAR': b_income, 'نوع_الدعم_المطلوب': b_type, 'حالة_الطلب': b_status, 'مستوى_الاحتياج_المتوقع_مستقبلا': 'متوسط'
+                    'المعرف': f'B-{len(df_beneficiaries)+1}', 'العائلة': b_family, 'عدد_أفراد_الأسرة': int(b_members),
+                    'الدخل_الشهري_SAR': int(b_income), 'نوع_الدعم_المطلوب': b_type, 'حالة_الطلب': b_status, 'مستوى_الاحتياج_المتوقع_مستقبلا': 'متوسط'
                 }
                 st.session_state.df_beneficiaries = pd.concat([df_beneficiaries, pd.DataFrame([new_row])], ignore_index=True)
                 st.success(f"✅ تم تسجيل العائلة {b_family} بنجاح!")
