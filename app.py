@@ -55,7 +55,7 @@ def convert_df_to_csv(df):
 
 # 3. واجهة التطبيق
 st.title("📊 منصة الخير الذكية والتعليمية")
-st.markdown("لوحة تحكم ذكية تعمل بكفاءة مطلقة ومحملة بالبيانات وميزة التصفير التلقائي.")
+st.markdown("لوحة تحكم ذكية تعمل بكفاءة مطلقة ومحملة بميزة الحذف والتصفير التلقائي.")
 st.divider()
 
 # 4. القائمة الجانبية
@@ -81,7 +81,20 @@ if sidebar_choice == "لوحة تحكم المتبرعين":
     col1.metric("إجمالي المتبرعين", f"{len(df_donors)} متبرع")
     col2.metric("إجمالي التبرعات (SAR)", f"{df_donors['مجموع_التبرعات_السنوية_SAR'].sum():,}")
     col3.metric("متوسط التبرع", f"{int(df_donors['مجموع_التبرعات_السنوية_SAR'].mean()):,} SAR")
+    
     st.download_button("📥 تحميل قاعدة البيانات", data=convert_df_to_csv(df_donors), file_name='donors_database.csv', mime='text/csv')
+    
+    # واجهة الحذف للمتبرعين
+    st.subheader("🗑️ إدارة وحذف المتبرعين من النظام")
+    delete_id = st.text_input("اكتب معرف المتبرع المراد حذفه بدقة (مثال: D-5):")
+    if st.button("❌ حذف المتبرع نهائياً وتحديث النظام"):
+        if delete_id in df_donors['المعرف'].values:
+            st.session_state.df_donors = df_donors[df_donors['المعرف'] != delete_id].reset_index(drop=True)
+            st.success(f"✅ تم حذف المتبرع ذو المعرف {delete_id} وحفظ التعديلات بنجاح!")
+            st.rerun()
+        else:
+            st.error("⚠️ المعرف غير موجود، يرجى التحقق من الجدول بالأسفل.")
+            
     fig, ax = plt.subplots(figsize=(6, 4))
     city_counts = df_donors['المدينة'].value_counts()
     fixed_labels = [fix_arabic(lbl) for lbl in city_counts.index]
@@ -134,6 +147,18 @@ elif sidebar_choice == "لوحة تحكم المستفيدين":
     col2.metric("متوسط دخل الأسرة", f"{int(df_beneficiaries['الدخل_الشهري_SAR'].mean()):,} SAR")
     col3.metric("متوسط عدد الأفراد", f"{int(df_beneficiaries['عدد_أفراد_الأسرة'].mean())} أفراد")
     st.download_button("📥 تحميل قاعدة البيانات", data=convert_df_to_csv(df_beneficiaries), file_name='beneficiaries_database.csv', mime='text/csv')
+    
+    # واجهة الحذف للمستفيدين
+    st.subheader("🗑️ إدارة وحذف المستفيدين من النظام")
+    delete_id_b = st.text_input("اكتب معرف العائلة المراد حذفها بدقة (مثال: B-5):")
+    if st.button("❌ حذف العائلة نهائياً وتحديث النظام"):
+        if delete_id_b in df_beneficiaries['المعرف'].values:
+            st.session_state.df_beneficiaries = df_beneficiaries[df_beneficiaries['المعرف'] != delete_id_b].reset_index(drop=True)
+            st.success(f"✅ تم حذف العائلة ذات المعرف {delete_id_b} وحفظ التعديلات بنجاح!")
+            st.rerun()
+        else:
+            st.error("⚠️ المعرف غير موجود، يرجى التحقق من الجدول بالأسفل.")
+            
     fig, ax = plt.subplots(figsize=(8, 4))
     df_fixed_b = df_beneficiaries.copy()
     df_fixed_b['نوع_الدعم_المطلوب'] = df_fixed_b['نوع_الدعم_المطلوب'].apply(fix_arabic)
@@ -227,7 +252,7 @@ elif sidebar_choice == "🧠 تعلم مفاهيم الإحصاء في هذا ا
 # --- البوت المساعد الذكي والتحليلي فائق الدقة المحدث والمسح التلقائي ---
 elif sidebar_choice == "البوت المساعد الذكي":
     st.header("🤖 مساعد الخير الذكي والتحليلي")
-    st.write("اسألني أي سؤال تحليلي (مثال: كم مجموع تبرعات جدة ومكة؟ ما هو تنبؤ تبرعات مكة؟)")
+    st.write("اسألني أي سؤال تحليلي (مثال: كم مجموع تبرعات جدة ومكة؟ عدد المستفيدين بالسكن)")
     
     with st.form("ai_bot_form", clear_on_submit=True):
         q = st.text_input("🔍 اكتب سؤالك الذكي هنا واضغط على زر الإرسال بالأسفل:")
@@ -239,16 +264,3 @@ elif sidebar_choice == "البوت المساعد الذكي":
         for city in ['الرياض', 'جدة', 'الدمام', 'مكة', 'المدينة']:
             if city in q_clean:
                 detected_cities.append(city)
-                
-        detected_support = None
-        support_map = {'سكن': 'سكني', 'غذاء': 'غذائي', 'صحي': 'صحي', 'تعليم': 'تعليمي'}
-        for key, val in support_map.items():
-            if key in q_clean:
-                detected_support = val
-                break
-
-        st.markdown(f"**💬 سؤالك الحالي:** *{q_clean}*")
-
-        if "متبرع" in q_clean or "تبرع" in q_clean or "مبلغ" in q_clean or "مجموع" in q_clean or "إجمالي" in q_clean or "تنبؤ" in q_clean:
-            if "تنبؤ" in q_clean or "متوقع" in q_clean:
-                X_model = df_donors[['العمر', 'عدد_مرات_التبرع']].values
