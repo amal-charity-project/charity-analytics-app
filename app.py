@@ -168,8 +168,7 @@ elif choice == "AI":
         s1 = st.slider("Age:", 18, 80, 35)
         s2 = st.slider("Freq:", 1, 24, 5)
         pred = lr.predict(np.array([[s1, s2]], dtype=np.float64))
-        # إصلاح استخراج القيمة المفردة من مصفوفة التنبؤ لمنع الـ TypeError نهائياً
-        val_f = int(max(0, pred[0]))
+        val_f = int(max(0, pred))
         st.success(f"💰 SAR {val_f}")
     with t2:
         X_c = df_donors[['Freq', 'Amount']].dropna().copy()
@@ -183,7 +182,8 @@ elif choice == "AI":
 
 elif choice == "Stats":
     st.header("🧠 معمل الإحصاء التعليمي")
-    st.metric(fix_arabic("الانحراف المعياري"), f"{int(df_donors['Amount'].std()):,}")
+    # إصلاح خطأ النص الإنجليزي المعكوس ليعرض العبارة العربية المستقيمة تماماً
+    st.metric(fix_arabic("الانحراف المعياري للمبالغ"), f"{int(df_donors['Amount'].std()):,}")
 
 elif choice == "Bot":
     st.header("🤖 مساعد الخير الذكي والتحليلي")
@@ -193,18 +193,23 @@ elif choice == "Bot":
     if submit_question and q:
         q_c = q.strip()
         st.markdown(f"💬 *{q_c}*")
-        c_list = []
-        c_map = {'الرياض': 'Riyadh', 'جدة': 'Jeddah', 'الدمام': 'Dammam', 'مكة': 'Makkah', 'المدينة': 'Madinah'}
-        for k_c, v_c in c_map.items():
-            if k_c in q_c:
-                c_list.append(v_c)
-        t_map = {'سكن': 'Home', 'غذاء': 'Food', 'غذائي': 'Food', 'صح': 'Health', 'تعليم': 'Edu'}
-        sel_t = None
-        for k_t, v_t in t_map.items():
-            if k_t in q_c:
-                sel_t = v_t
-                break
-        if "متبرع" in q_c or "تبرع" in q_c or "مبلغ" in q_c or "مجموع" in q_c or "إجمالي" in q_c or "تنبؤ" in q_c:
+        if "رتب" in q_c or "ترتيب" in q_c:
+            is_asc = False if "تنازلي" in q_c else True
+            if "متبرع" in q_c or "تبرع" in q_c:
+                sorted_df = df_d_ar.sort_values(by='Amount', ascending=is_asc)
+                st.success("📌 تم ترتيب جدول المتبرعين تصاعدياً:")
+                st.dataframe(sorted_df, use_container_width=True)
+            elif "مستفيد" in q_c or "عائلة" in q_c or "أسرة" in q_c:
+                sorted_df = df_b_ar.sort_values(by='Income', ascending=is_asc)
+                st.success("📌 تم ترتيب جدول المستفيدين:")
+                st.dataframe(sorted_df, use_container_width=True)
+            else:
+                st.warning("⚠️")
+        elif "متبرع" in q_c or "تبرع" in q_c or "مبلغ" in q_c or "مجموع" in q_c or "إجمالي" in q_c or "تنبؤ" in q_c:
+            c_list = []
+            c_map = {'الرياض': 'Riyadh', 'جدة': 'Jeddah', 'الدمام': 'Dammam', 'مكة': 'Makkah', 'المدينة': 'Madinah'}
+            for k_c, v_c in c_map.items():
+                if k_c in q_c: c_list.append(v_c)
             if "تنبؤ" in q_c or "متوقع" in q_c:
                 X_m = df_donors[['Age', 'Freq']].values
                 y_m = df_donors['Amount'].values
@@ -213,7 +218,7 @@ elif choice == "Bot":
                 avg_age = sub['Age'].mean() if not sub.empty else 35
                 avg_fr = sub['Freq'].mean() if not sub.empty else 5
                 p_b = lr_b.predict(np.array([[avg_age, avg_fr]], dtype=np.float64))
-                st.success(f"🔮 SAR {int(max(0, p_b[0]))}")
+                st.success(f"🔮 SAR {int(max(0, p_b))}")
             elif c_list:
                 sub = df_donors[df_donors['City'].isin(c_list)]
                 if "مجموع" in q_c or "إجمالي" in q_c or "مبالغ" in q_c or "تبرعات" in q_c and "كم" not in q_c:
@@ -228,6 +233,10 @@ elif choice == "Bot":
                 else:
                     st.success(f"💰 SAR {df_donors['Amount'].sum():,}")
         elif "مستفيد" in q_c or "حالة" in q_c or "أسرة" in q_c or "عائلة" in q_c:
+            t_map = {'سكن': 'Home', 'غذاء': 'Food', 'غذائي': 'Food', 'صح': 'Health', 'تعليم': 'Edu'}
+            sel_t = None
+            for k_t, v_t in t_map.items():
+                if k_t in q_c: sel_t = v_t; break
             if sel_t:
                 sub = df_beneficiaries[df_beneficiaries['Type'] == sel_t]
                 st.success(f"📊 {len(sub)}")
