@@ -245,12 +245,50 @@ elif sidebar_choice == "🧠 تعلم مفاهيم الإحصاء في هذا ا
         st.write(f"📊 {fix_arabic('المتوسط الحسابي')}: {int(mean_inc):,} SAR")
         st.write(f"📊 {fix_arabic('الوسيط الإحصائي')}: {int(median_inc):,} SAR")
 
+# --- البوت المساعد الذكي التحليلي المطور ---
 elif sidebar_choice == "البوت المساعد الذكي":
-    st.header("🤖 مساعد الخير الذكي")
-    search_query = st.text_input("🔍 ابحث عن اسم متبرع أو عائلة مستفيدة:")
-    if search_query:
-        donor_results = df_donors[df_donors['الاسم'].str.contains(search_query, na=False)]
-        if not donor_results.empty:
-            st.dataframe(donor_results, use_container_width=True)
+    st.header("🤖 مساعد الخير الذكي والتحليلي")
+    st.write("اسألني أسئلة تحليلية (مثل: كم عدد المستفيدين؟ إجمالي التبرعات؟ تبرعات الرياض؟)")
+    
+    q = st.text_input("🔍 اكتب سؤالك الذكي هنا:")
+    if q:
+        q_clean = q.strip()
+        
+        # 1. الإجابة على أسئلة الأعداد والإجماليات
+        if "عدد" in q_clean and "مستفيد" in q_clean:
+            st.success(f"📊 عدد الأسر المستفيدة المسجلة حالياً هو: {len(df_beneficiaries)} أسرة.")
+            
+        elif "عدد" in q_clean and "متبرع" in q_clean:
+            st.success(f"📊 عدد المتبرعين المسجلين في النظام هو: {len(df_donors)} متبرع.")
+            
+        elif "إجمالي" in q_clean or "مجموع" in q_clean or "تبرع" in q_clean and "صندوق" in q_clean:
+            total_money = df_donors['مجموع_التبرعات_السنوية_SAR'].sum()
+            st.success(f"💰 إجمالي التبرعات الحالية في الصندوق السنوي: {total_money:,} SAR")
+            
+        # 2. الإجابة على تبرعات المدن تلقائياً
+        elif "الرياض" in q_clean:
+            val = df_donors[df_donors['المدينة'] == 'الرياض']['مجموع_التبرعات_السنوية_SAR'].sum()
+            st.success(f"📍 إجمالي التبرعات القادمة من مدينة الرياض: {val:,} SAR")
+            
+        elif "جدة" in q_clean:
+            val = df_donors[df_donors['المدينة'] == 'جدة']['مجموع_التبرعات_السنوية_SAR'].sum()
+            st.success(f"📍 إجمالي التبرعات القادمة من مدينة جدة: {val:,} SAR")
+            
+        elif "الدمام" in q_clean:
+            val = df_donors[df_donors['المدينة'] == 'الدمام']['مجموع_التبرعات_السنوية_SAR'].sum()
+            st.success(f"📍 إجمالي التبرعات القادمة من مدينة الدمام: {val:,} SAR")
+            
+        # 3. البحث الكلاسيكي عن الأسماء الصريحة (كخيار بديل)
         else:
-            st.warning("⚠️ لا توجد نتائج مطابقة لبحثك في قاعدة البيانات.")
+            res_d = df_donors[df_donors['الاسم'].str.contains(q_clean, na=False)]
+            res_b = df_beneficiaries[df_beneficiaries['العائلة'].str.contains(q_clean, na=False)]
+            
+            if not res_d.empty:
+                st.write("📌 نتائج البحث في المتبرعين:")
+                st.dataframe(res_d, use_container_width=True)
+            elif not res_b.empty:
+                st.write("📌 نتائج البحث في المستفيدين:")
+                st.dataframe(res_b, use_container_width=True)
+            else:
+                st.warning("⚠️ لم أفهم السؤال الإحصائي، ولم أجد اسماً مطابقاً في قاعدة البيانات. جرب كتابة: 'كم عدد المستفيدين' أو 'متبرع 10'.")
+
