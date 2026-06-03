@@ -13,14 +13,13 @@ def fix_arabic(text_to_fix):
     reshaped_text = arabic_reshaper.reshape(str(text_to_fix))
     return get_display(reshaped_text)
 
-# 1. إعدادات الصفحة الرئيسية
+# 1. إعدادات الصفحة الرئيسية واجهة عريضة
 st.set_page_config(page_title="منصة الخير الذكية والتعليمية", layout="wide", page_icon="📊")
 
-# 2. توليد وتثبيت البيانات في الذاكرة السحابية (Session State) لضمان الاستقرار
-if 'data_loaded' not in st.session_state:
+# 2. توليد البيانات الضخمة وتثبيتها بشكل مستقل تماماً في الذاكرة السحابية
+if 'df_donors' not in st.session_state:
     np.random.seed(42)
     n_records = 1000
-    
     st.session_state.df_donors = pd.DataFrame({
         'المعرف': [f'D-{i}' for i in range(1, n_records + 1)],
         'الاسم': [f'متبرع {i}' for i in range(1, n_records + 1)],
@@ -30,7 +29,10 @@ if 'data_loaded' not in st.session_state:
         'عدد_مرات_التبرع': np.random.randint(1, 12, size=n_records),
         'احتمالية_التبرع_المستقبلي_%': np.random.randint(40, 99, size=n_records)
     })
-    
+
+if 'df_beneficiaries' not in st.session_state:
+    np.random.seed(42)
+    n_records = 1000
     st.session_state.df_beneficiaries = pd.DataFrame({
         'المعرف': [f'B-{i}' for i in range(1, n_records + 1)],
         'العائلة': [f'عائلة {i}' for i in range(1, n_records + 1)],
@@ -40,8 +42,8 @@ if 'data_loaded' not in st.session_state:
         'حالة_الطلب': np.random.choice(['مقبول', 'قيد الدراسة', 'مكتمل'], size=n_records),
         'مستوى_الاحتياج_المتوقع_مستقبلا': np.random.choice(['مرتفع جداً', 'متوسط', 'مستقر'], size=n_records)
     })
-    st.session_state.data_loaded = True
 
+# استدعاء الجداول من الذاكرة المستقرة
 df_donors = st.session_state.df_donors
 df_beneficiaries = st.session_state.df_beneficiaries
 
@@ -192,5 +194,3 @@ elif sidebar_choice == "إدخل بيانات مستفيدين ➕":
             st.write("👀 عينة من الحالات المكتشفة داخل ملفك:")
             st.dataframe(uploaded_df_b.head(5))
             
-            if st.button("🚀 دمج وتحديث ملفات المستفيدين فوراً"):
-                start_id_b = len(df_beneficiaries) + 1
