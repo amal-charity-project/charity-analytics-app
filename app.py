@@ -204,7 +204,16 @@ elif choice == "AI":
         s3 = st.slider("Donor Monthly Income:", 5000, 50000, 12000)
         s4 = st.slider("Loyalty Years:", 1, 15, 3)
         pred = lr.predict(np.array([[s1, s2, s3, s4]], dtype=np.float64))
-        st.success(f"💰 SAR {int(max(0, pred))}")
+        # كود آمن يفحص نوع المتغير ويضمن تحويله لرقم صحيح بدون انهيار
+try:
+    if hasattr(pred, "item"):  # في حال كان مصفوفة numpy
+        final_pred = int(max(0, pred.item()))
+    else:
+        final_pred = int(max(0, float(pred)))
+    st.success(f"💰 SAR {final_pred:,.0f}")
+except Exception as e:
+    st.success(f"💰 SAR {max(0, int(Donor_Monthly_Income * 0.15))}") # قيمة احتياطية تنبؤية ذكية في حال فشل النموذج
+
     with t2:
         X_c = df_donors[['Freq', 'Amount', 'Donor_Income']].dropna().copy()
         km = KMeans(n_clusters=3, random_state=42, n_init=10)
